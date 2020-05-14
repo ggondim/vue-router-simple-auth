@@ -50,7 +50,7 @@ export default function (Vue, {
     beforeRouteEnter(to, from, next) {
       if (to && to.meta && to.meta[authRouteKey]) {
         const routeAuth = to.meta[authRouteKey];
-        _execGuardOrAwait({
+        return _execGuardOrAwait({
           storage,
           routeAuth,
           next,
@@ -60,6 +60,7 @@ export default function (Vue, {
           timeout: initTimeout,
         });
       }
+      next();
     },
   });
 }
