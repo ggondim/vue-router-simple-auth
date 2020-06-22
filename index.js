@@ -60,8 +60,14 @@ function _execGuardOrAwait(options) {
   } = options;
   const _storage = typeof storage === 'function' ? storage() : storage;
 
-  if (storage) return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403 });
-  if (!awaitTimeout) return next(new Error('COULD NOT GET STORAGE'));
+  // TODO: async storage
+  if (!_storage) {
+    return next(new Error('COULD NOT GET STORAGE'));
+  }
+
+  if (_storage.accessToken || (!_storage.accessToken && !awaitTimeout)) {
+    return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403 });
+  }
 
   const timer = setTimeout(() => {
     clearTimeout(timer);
