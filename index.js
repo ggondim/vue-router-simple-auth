@@ -36,7 +36,7 @@ function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403 } 
   if (typeof routeAuth === 'object' && routeAuth.permissions) {
     const notFoundPermissions = _validatePermissions(decodedToken, routeAuth.permissions);
 
-    if (!notFoundPermissions.length) {
+    if (notFoundPermissions.length) {
       const error = new Error('403 REQUIRED PERMISSIONS');
       error.tokenPermissions = decodedToken.permissions;
       error.requiredPermissions = notFoundPermissions;
