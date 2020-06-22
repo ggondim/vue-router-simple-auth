@@ -59,7 +59,6 @@ function _execGuardOrAwait(options) {
     timeout,
   } = options;
   const _storage = typeof storage === 'function' ? storage() : storage;
-  console.log('exec guard')
 
   // TODO: async storage
   if (!_storage) {
@@ -68,13 +67,10 @@ function _execGuardOrAwait(options) {
 
   const decodedToken = parseJwt(storage.accessToken);
   if (decodedToken || (!decodedToken && !awaitTimeout)) {
-    console.log('exec before route 1', { token: _storage.accessToken, awaitTimeout })
     return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403 });
   }
 
-  console.log('setando timer', { token: _storage.accessToken, awaitTimeout })
   const timer = setTimeout(() => {
-    console.log('timer executado', { token: _storage.accessToken, awaitTimeout })
     clearTimeout(timer);
     return _execGuardOrAwait({ ...options, awaitTimeout: false });
   }, timeout * 1000);
@@ -90,7 +86,6 @@ export default function (Vue, {
   Vue.mixin({
     beforeRouteEnter(to, from, next) {
       if (to && to.meta && to.meta[authRouteKey]) {
-        console.log('tem auth')
         const routeAuth = to.meta[authRouteKey];
         _execGuardOrAwait({
           storage,
@@ -102,7 +97,6 @@ export default function (Vue, {
           timeout: initTimeout,
         });
       } else {
-        console.log('não tem auth')
         next();
       }
     },
