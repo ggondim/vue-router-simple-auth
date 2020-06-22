@@ -71,7 +71,7 @@ function _execGuardOrAwait(options) {
 
   const timer = setTimeout(() => {
     clearTimeout(timer);
-    _execGuardOrAwait({ ...options, awaitTimeout: false });
+    return _execGuardOrAwait({ ...options, awaitTimeout: false });
   }, timeout * 1000);
 }
 
@@ -86,7 +86,7 @@ export default function (Vue, {
     beforeRouteEnter(to, from, next) {
       if (to && to.meta && to.meta[authRouteKey]) {
         const routeAuth = to.meta[authRouteKey];
-        return _execGuardOrAwait({
+        _execGuardOrAwait({
           storage,
           routeAuth,
           next,
@@ -95,8 +95,9 @@ export default function (Vue, {
           awaitTimeout: true,
           timeout: initTimeout,
         });
+      } else {
+        next();
       }
-      next();
     },
   });
 }
