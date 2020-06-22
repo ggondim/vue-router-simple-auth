@@ -66,7 +66,8 @@ function _execGuardOrAwait(options) {
     return next(new Error('COULD NOT GET STORAGE'));
   }
 
-  if (_storage.accessToken || (!_storage.accessToken && !awaitTimeout)) {
+  const decodedToken = parseJwt(storage.accessToken);
+  if (decodedToken || (!decodedToken && !awaitTimeout)) {
     console.log('exec before route 1', { token: _storage.accessToken, awaitTimeout })
     return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403 });
   }
