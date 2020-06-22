@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/ggondim/vue-router-simple-auth/issues"
   },
-  "homepage": "https://github.com/ggondim/vue-router-simple-auth#readme"
+  "homepage": "https://github.com/ggondim/vue-router-simple-auth#readme",
+  "dependencies": {
+    "jwtiny": "^1.0.2"
+  }
 }

@@ -1,18 +1,48 @@
-function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403 } = {}) {
-  if (!storage.accessToken) {
-    // TODO: validar outros aspectos do access token, como expiração, etc.
-    if (!route401) return next(new Error('401 ACCESS TOKEN NOT FOUND'));
-    return next(route401);
+import { parseJwt } from 'jwtiny';
+
+function _validatePermissions(decodedToken, permissions) {  
+  let notFoundPermissions = [];
+  if (permissions && Array.isArray(permissions)) {
+    if (
+      !decodedToken.permissions
+      || !decodedToken.permissions.length 
+      || !Array.isArray(decodedToken.permissions)
+    ) {
+      // token doesn't have permissions
+      notFoundPermissions = permissions;
+    } else {
+      notFoundPermissions = permissions
+        .filter(permission => !decodedToken.permissions.includes(permission));
+    }
   }
-  if (typeof routeAuth === 'object' && routeAuth.scopes && routeAuth.scopes.length) {
-    // TODO: validar scopes do access token
-    const hasScopes = false;
-    if (!hasScopes) {
-      const error = new Error('403 SCOPES NOT MATCH');
-      error.requested = routeAuth.scopes;
-      // error.found = user.scopes;
+  return notFoundPermissions;
+}
+
+function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403 } = {}) {
+  const decodedToken = parseJwt(storage.accessToken);
+
+  if (!decodedToken) {
+    const error = new Error('401 ACCESS TOKEN NOT FOUND');
+    if (!route401) return next(error);
+    return next({ ...route401, params: { error }});
+  }
+
+  if (decodedToken.exp && decodedToken.exp <= Date.now()) {
+    const error = new Error('401 ACCESS TOKEN EXPIRED');
+    if (!route401) return next(error);
+    return next({ ...route401, params: { error }});
+  }
+  
+  if (typeof routeAuth === 'object' && routeAuth.permissions) {
+    const notFoundPermissions = _validatePermissions(decodedToken, routeAuth.permissions);
+
+    if (!notFoundPermissions.length) {
+      const error = new Error('403 REQUIRED PERMISSIONS');
+      error.tokenPermissions = decodedToken.permissions;
+      error.requiredPermissions = notFoundPermissions;
+
       if (!route403) return next(error);
-      return next(route403);
+      return next({ ...route403, params: { error }});
     }
   }
   return next();
@@ -36,7 +66,7 @@ function _execGuardOrAwait(options) {
   const timer = setTimeout(() => {
     clearTimeout(timer);
     _execGuardOrAwait({ ...options, awaitTimeout: false });
-  }, timeout);
+  }, timeout * 1000);
 }
 
 export default function (Vue, {
