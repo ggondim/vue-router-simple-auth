@@ -27,7 +27,7 @@ function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403 } 
     return next({ ...route401, params: { error }});
   }
 
-  if (decodedToken.exp && decodedToken.exp <= Date.now()) {
+  if (decodedToken.exp && ((decodedToken.exp * 1000) <= Date.now())) {
     const error = new Error('401 ACCESS TOKEN EXPIRED');
     if (!route401) return next(error);
     return next({ ...route401, params: { error }});
