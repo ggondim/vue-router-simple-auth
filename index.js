@@ -18,7 +18,7 @@ function _validatePermissions(decodedToken, permissions) {
   return notFoundPermissions;
 }
 
-function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403, to } = {}) {
+function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403, to, timezone } = {}) {
   const decodedToken = parseJwt(storage.accessToken);
 
   if (!decodedToken) {
@@ -27,7 +27,8 @@ function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403, t
     return next({ ...route401, params: { error, from: to }});
   }
 
-  if (decodedToken.exp && ((decodedToken.exp * 1000) <= Date.now())) {
+  const nowUtc = Date.now() + ((timezone * -1) * 60 * 60 * 1000);
+  if (decodedToken.exp && ((decodedToken.exp * 1000) <= nowUtc)) {
     const error = new Error('401 ACCESS TOKEN EXPIRED');
     if (!route401) return next(error);
     return next({ ...route401, params: { error, from: to }});
@@ -58,6 +59,7 @@ function _execGuardOrAwait(options) {
     awaitTimeout,
     timeout,
     to,
+    timezone,
   } = options;
   const _storage = typeof storage === 'function' ? storage() : storage;
 
@@ -68,7 +70,7 @@ function _execGuardOrAwait(options) {
 
   const decodedToken = parseJwt(storage.accessToken);
   if (decodedToken || (!decodedToken && !awaitTimeout)) {
-    return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403, to });
+    return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403, to, timezone });
   }
 
   const timer = setTimeout(() => {
@@ -83,6 +85,7 @@ export default function (Vue, {
   initTimeout = 3,
   authRouteKey = 'auth',
   storage = window.localStorage,
+  timezone = 0,
 } = {}) {
   Vue.mixin({
     beforeRouteEnter(to, from, next) {
@@ -97,6 +100,7 @@ export default function (Vue, {
           awaitTimeout: true,
           timeout: initTimeout,
           to,
+          timezone,
         });
       } else {
         next();
