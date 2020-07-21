@@ -18,19 +18,19 @@ function _validatePermissions(decodedToken, permissions) {
   return notFoundPermissions;
 }
 
-function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403 } = {}) {
+function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403, to } = {}) {
   const decodedToken = parseJwt(storage.accessToken);
 
   if (!decodedToken) {
     const error = new Error('401 ACCESS TOKEN NOT FOUND');
     if (!route401) return next(error);
-    return next({ ...route401, params: { error }});
+    return next({ ...route401, params: { error, from: to }});
   }
 
   if (decodedToken.exp && ((decodedToken.exp * 1000) <= Date.now())) {
     const error = new Error('401 ACCESS TOKEN EXPIRED');
     if (!route401) return next(error);
-    return next({ ...route401, params: { error }});
+    return next({ ...route401, params: { error, from: to }});
   }
   
   if (typeof routeAuth === 'object' && routeAuth.permissions) {
@@ -42,7 +42,7 @@ function _execBeforeRouteEnter(storage, routeAuth, next, { route401, route403 } 
       error.requiredPermissions = notFoundPermissions;
 
       if (!route403) return next(error);
-      return next({ ...route403, params: { error }});
+      return next({ ...route403, params: { error, from: to }});
     }
   }
   return next();
@@ -57,6 +57,7 @@ function _execGuardOrAwait(options) {
     route403,
     awaitTimeout,
     timeout,
+    to,
   } = options;
   const _storage = typeof storage === 'function' ? storage() : storage;
 
@@ -67,7 +68,7 @@ function _execGuardOrAwait(options) {
 
   const decodedToken = parseJwt(storage.accessToken);
   if (decodedToken || (!decodedToken && !awaitTimeout)) {
-    return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403 });
+    return _execBeforeRouteEnter(_storage, routeAuth, next, { route401, route403, to });
   }
 
   const timer = setTimeout(() => {
@@ -95,6 +96,7 @@ export default function (Vue, {
           route403,
           awaitTimeout: true,
           timeout: initTimeout,
+          to,
         });
       } else {
         next();
